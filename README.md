@@ -2,13 +2,20 @@
 
 FlowShell is a GNOME Shell theme for GNOME and other GTK-based desktop environments.
 
-Getting started
-- Make the installer executable and run it:
+Usage
+- To install the theme system-wide (requires administrative rights), run:
 
 ```bash
-chmod +x install.sh
+bash install.sh
+```
+
+- Or, if the file is executable:
+
+```bash
 ./install.sh
 ```
+
+ - The `install.sh` script installs the theme system-wide (may prompt for sudo).
 
 License
 - This project is licensed under the MIT License. See `LICENSE`.
