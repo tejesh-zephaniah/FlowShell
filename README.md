@@ -1,6 +1,6 @@
 # FlowShell
 
-FlowShell is a small collection of GNOME Shell theme files and an `install.sh` installer to apply them.
+FlowShell is a GNOME Shell theme for GNOME and other GTK-based desktop environments.
 
 Getting started
 - Make the installer executable and run it:
