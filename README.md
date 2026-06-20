@@ -2,6 +2,12 @@
 
 FlowShell is a GNOME Shell theme for GNOME and other GTK-based desktop environments.
 
+## Screenshots
+
+![Screenshot 1](images/Screenshot%20From%202026-06-20%2009-41-57.png)
+
+![Screenshot 2](images/Screenshot%20From%202026-06-20%2009-47-50.png)
+
 Usage
 - To install the theme system-wide (requires administrative rights), run:
 
