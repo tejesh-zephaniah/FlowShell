@@ -1,0 +1,20 @@
+# Ignore editor/project files
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
+
+# Build artifacts
+*.pyc
+__pycache__/
+build/
+dist/
+
+# OS files
+.cache/
+
+# Temporary
+*.bak
+*.tmp

@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Yaru-Flat
+Comment=A Yaru-based theme with reduced popup roundness
+Encoding=UTF-8
+
+[X-GNOME-Metatheme]
+GtkTheme=Yaru
+MetacityTheme=Yaru
+IconTheme=Yaru
+CursorTheme=Yaru
+ButtonLayout=close,minimize,maximize:menu
