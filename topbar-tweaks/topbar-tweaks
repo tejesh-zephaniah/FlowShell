@@ -138,15 +138,17 @@ class TopBarTweaks(Adw.Application):
         for fpath in glob.glob(os.path.join(CSS_DIR, "gnome-shell*.css")):
             with open(fpath, 'r') as f:
                 lines = f.readlines()
-            in_block = False
             modified = False
             new_lines = []
+            state = "none"
             for line in lines:
                 if re.match(r'^\s*#panel\s*\.panel-button\s*\{\s*$', line):
-                    in_block = True
-                elif in_block and '}' in line:
-                    in_block = False
-                if in_block and 'background-color:' in line and 'rgba' in line:
+                    state = "panel"
+                elif re.match(r'^\s*#panel\s*\.panel-button\.clock-display\s*\{\s*$', line):
+                    state = "clock"
+                elif state != "none" and '}' in line:
+                    state = "none"
+                if state in ("panel", "clock") and 'rgba' in line:
                     new_line = re.sub(
                         r'rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*[\d.]+\s*\)',
                         f'rgba(0, 0, 0, {val:.2f})',
