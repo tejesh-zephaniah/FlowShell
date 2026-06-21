@@ -1,12 +1,12 @@
 [Desktop Entry]
 Type=X-GNOME-Metatheme
-Name=Yaru-Flat
-Comment=A Yaru-based theme with reduced popup roundness
+Name=FlowShell
+Comment=A floating pill theme with transparent sidebar
 Encoding=UTF-8
 
 [X-GNOME-Metatheme]
-GtkTheme=Yaru
-MetacityTheme=Yaru
-IconTheme=Yaru
-CursorTheme=Yaru
+GtkTheme=FlowShell
+MetacityTheme=Adwaita
+IconTheme=Adwaita
+CursorTheme=Adwaita
 ButtonLayout=close,minimize,maximize:menu

@@ -1,0 +1,180 @@
+#!/usr/bin/env python3
+import gi
+gi.require_version('Gtk', '4.0')
+gi.require_version('Adw', '1')
+from gi.repository import Gtk, Adw, GLib, Gdk, Gio
+import os, subprocess, sys, re, glob
+
+CONFIG_DIR = os.path.expanduser("~/.config/flow-shell")
+OPACITY_FILE = os.path.join(CONFIG_DIR, "topbar-opacity.conf")
+CSS_DIR = "/usr/share/themes/FlowShell/gnome-shell"
+DEFAULT_OPACITY = 0.60
+
+STYLE = b"""
+.topbar-tweaks-window { background-color: @window_bg_color; }
+.percent-label { font-size: 13px; font-weight: bold; color: @accent_bg_color; margin-left: 4px; }
+scale trough { min-height: 3px; border-radius: 2px; }
+scale highlight { min-height: 3px; border-radius: 2px; background: @accent_bg_color; }
+scale slider { min-width: 14px; min-height: 14px; border-radius: 7px; background: @accent_bg_color; border: 2px solid alpha(@window_bg_color, 0.8); }
+"""
+
+class TopBarTweaks(Adw.Application):
+    def __init__(self):
+        super().__init__(application_id="org.flowshell.topbar-tweaks", flags=Gio.ApplicationFlags.REPLACE)
+        self.connect("activate", self.on_activate)
+        self._debounce_id = None
+
+    def on_activate(self, app):
+        win = Gtk.Window()
+        win.set_application(app)
+        win.add_css_class("topbar-tweaks-window")
+        win.set_default_size(560, 380)
+        win.set_title("Top Bar Tweaks")
+
+        header = Gtk.HeaderBar()
+        win.set_titlebar(header)
+
+        provider = Gtk.CssProvider()
+        provider.load_from_data(STYLE)
+        Gtk.StyleContext.add_provider_for_display(
+            win.get_display(), provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+
+        page = Adw.PreferencesPage()
+        page.set_margin_top(8)
+        page.set_margin_bottom(8)
+        page.set_margin_start(12)
+        page.set_margin_end(12)
+
+        group = Adw.PreferencesGroup()
+        group.set_title("Top Bar Opacity")
+        group.set_description("Slide to adjust \u2014 applies automatically")
+
+        row = Adw.ActionRow()
+        row.set_title("Opacity")
+
+        adj = Gtk.Adjustment(value=DEFAULT_OPACITY, lower=0.0, upper=1.0, step_increment=0.01, page_increment=0.1)
+        self.slider = Gtk.Scale(orientation=Gtk.Orientation.HORIZONTAL, adjustment=adj)
+        self.slider.set_draw_value(False)
+        self.slider.set_hexpand(True)
+        self.slider.set_valign(Gtk.Align.CENTER)
+        self.slider.set_size_request(350, -1)
+        self.slider.connect("value-changed", self.on_slider_changed)
+        row.add_suffix(self.slider)
+
+        self.percent_label = Gtk.Label(label=f"{int(DEFAULT_OPACITY*100)}%")
+        self.percent_label.add_css_class("percent-label")
+        row.add_suffix(self.percent_label)
+
+        row.set_activatable_widget(self.slider)
+        group.add(row)
+
+        btn_row = Adw.ActionRow()
+        btn_row.set_activatable_widget(None)
+
+        reset_btn = Gtk.Button(label="Reset")
+        reset_btn.add_css_class("pill")
+        reset_btn.connect("clicked", self.on_reset)
+
+        btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        btn_box.set_halign(Gtk.Align.CENTER)
+        btn_box.set_hexpand(True)
+        btn_box.append(reset_btn)
+        btn_row.add_suffix(btn_box)
+
+        self.status_label = Gtk.Label(label="")
+        self.status_label.set_halign(Gtk.Align.CENTER)
+        self.status_label.set_margin_top(4)
+        btn_row.add_suffix(self.status_label)
+
+        group.add(btn_row)
+        page.add(group)
+        win.set_child(page)
+        win.present()
+
+        self.load_opacity()
+
+    def load_opacity(self):
+        try:
+            with open(OPACITY_FILE) as f:
+                val = float(f.read().strip())
+                if 0.0 <= val <= 1.0:
+                    self.slider.set_value(val)
+                    self.update_label(val)
+        except (FileNotFoundError, ValueError):
+            pass
+
+    def save_opacity(self, val):
+        os.makedirs(CONFIG_DIR, exist_ok=True)
+        with open(OPACITY_FILE, "w") as f:
+            f.write(f"{val:.2f}")
+
+    def update_label(self, val):
+        self.percent_label.set_text(f"{int(val * 100)}%")
+
+    def on_slider_changed(self, scale):
+        val = scale.get_value()
+        self.update_label(val)
+        self.save_opacity(val)
+        if self._debounce_id:
+            GLib.source_remove(self._debounce_id)
+        self._debounce_id = GLib.timeout_add(400, self._do_apply, val)
+
+    def _do_apply(self, val):
+        self._debounce_id = None
+        try:
+            self._set_opacity_in_files(val)
+            self._reload_theme()
+            self.status_label.set_text(f"{int(val*100)}% \u2014 applied")
+        except PermissionError:
+            self.status_label.set_text("Fix permissions: sudo chmod 666 /usr/share/themes/FlowShell/gnome-shell/gnome-shell*.css")
+        except Exception as e:
+            self.status_label.set_text(f"Error: {e}")
+        GLib.timeout_add_seconds(3, lambda: self.status_label.set_text(""))
+        return False
+
+    def _set_opacity_in_files(self, val):
+        for fpath in glob.glob(os.path.join(CSS_DIR, "gnome-shell*.css")):
+            with open(fpath, 'r') as f:
+                lines = f.readlines()
+            in_block = False
+            modified = False
+            new_lines = []
+            for line in lines:
+                if re.match(r'^\s*#panel\s*\.panel-button\s*\{\s*$', line):
+                    in_block = True
+                elif in_block and '}' in line:
+                    in_block = False
+                if in_block and 'background-color:' in line and 'rgba' in line:
+                    new_line = re.sub(
+                        r'rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*[\d.]+\s*\)',
+                        f'rgba(0, 0, 0, {val:.2f})',
+                        line
+                    )
+                    if new_line != line:
+                        modified = True
+                    new_lines.append(new_line)
+                else:
+                    new_lines.append(line)
+            if modified:
+                with open(fpath, 'w') as f:
+                    f.writelines(new_lines)
+
+    def _reload_theme(self):
+        subprocess.run(
+            ["dconf", "write", "/org/gnome/shell/extensions/user-theme/name", "''"],
+            timeout=5, capture_output=True
+        )
+        subprocess.run(
+            ["dconf", "write", "/org/gnome/shell/extensions/user-theme/name", "'FlowShell'"],
+            timeout=5, capture_output=True
+        )
+
+    def on_reset(self, btn):
+        self.slider.set_value(DEFAULT_OPACITY)
+        self.update_label(DEFAULT_OPACITY)
+
+if __name__ == "__main__":
+    app = TopBarTweaks()
+    app.run(sys.argv)

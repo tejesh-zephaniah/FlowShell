@@ -1,0 +1,53 @@
+window.background {
+    background-color: transparent;
+}
+
+.sidebar-pane {
+    background-color: rgba(25, 25, 30, 0.92);
+    border: none;
+}
+
+navigation-sidebar,
+.navigation-sidebar,
+.sidebar,
+placessidebar,
+stacksidebar {
+    background-color: transparent;
+    border: none;
+}
+
+navigation-sidebar > viewport,
+.navigation-sidebar > viewport,
+placessidebar > viewport {
+    background-color: transparent;
+}
+
+navigation-sidebar row,
+.navigation-sidebar row,
+.sidebar row,
+placessidebar row,
+stacksidebar row {
+    background-color: transparent;
+    border: none;
+}
+
+navigation-sidebar row:selected,
+.navigation-sidebar row:selected,
+.sidebar row:selected,
+placessidebar row:selected,
+stacksidebar row:selected {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+navigation-sidebar row:hover,
+.navigation-sidebar row:hover,
+.sidebar row:hover,
+placessidebar row:hover,
+stacksidebar row:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+}
+
+.content-pane {
+    background-color: @theme_bg_color;
+    border: none;
+}
